@@ -1,60 +1,57 @@
 import streamlit as st
 import zipfile
 import io
-#Le Titre de la page
-st.header("Modification automatique de fichier HTML")
 
-# Upload d’un fichier ZIP 
-uploaded_zip = st.file_uploader(
-    "Importer un fichier ZIP contenant des fichiers HTML",
-    type=["zip"]
+st.title("HTML Automator - Custom Tag Replacement")
+
+# Import ZIP
+uploaded_zip = st.file_uploader("Upload a ZIP containing HTML files", type=["zip"])
+
+# Zone pour balises à remplacer et leurs remplacements
+st.subheader("Enter the tags to replace and their replacements")
+
+# L'utilisateur entre les balises sous forme de liste : "balise1=remplacement1, balise2=remplacement2"
+tags_input = st.text_area(
+    "Format: old_tag1=new_tag1, old_tag2=new_tag2",
+    placeholder="Example: [NAME]=John,[EMAIL]=example@example.com"
 )
 
-# Les balises à modifier
-replacements = {
-    "[EMAIL]": "#A7_email#",
-    "[PRENOM]": "#A7_prenom#",
-    "[NOM]": "#A7_nom#",
-    "[NOMDELABASE]": "#A7_platformreference#",
-}
+if st.button("Analyze & Modify") and uploaded_zip is not None and tags_input:
+    
+    # Créer le dictionnaire de remplacements à partir de la saisie utilisateur
+    replacements = {}
+    for pair in tags_input.split(","):
+        if "=" in pair:
+            old, new = pair.split("=")
+            replacements[old.strip()] = new.strip()
 
-if uploaded_zip is not None and st.button("Analyser et Modifier"):  # si le dossier n'est pas vide 
-
-    # Lire le dossier ZIP
+    # Lire le ZIP
     zip_bytes = uploaded_zip.read()
-    # Transformer le fichier zip en  fichier exploitable par python
     zip_buffer = io.BytesIO(zip_bytes)
-    # Ouverture de fichier zip en mode lecture
+    
     with zipfile.ZipFile(zip_buffer, "r") as zip_file:
-        #récupération des noms des fichiers existant dans le zip dans une liste
-        file_list = zip_file.namelist()
-        st.subheader("Fichiers dans le ZIP :")
-        # Affichage des noms de fichiers 
-        st.write(file_list)
-
-        # Créer un nouveau ZIP pour les fichiers modifiés
+        # Créer un nouveau ZIP en mémoire
         zip_modified_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_modified_buffer, "w", zipfile.ZIP_DEFLATED) as new_zip:
-            for file_name in file_list:
-                # Lire le contenu du fichier
+            for file_name in zip_file.namelist():
                 with zip_file.open(file_name) as f:
-                    content = f.read().decode("utf-8")  # texte
-
-                    # Modifier le contenu si besoin
+                    content = f.read().decode("utf-8")
+                    # Remplacer les balises
                     modified_content = content
                     for old, new in replacements.items():
                         modified_content = modified_content.replace(old, new)
-
-                    # Ajouter le fichier modifié dans le nouveau ZIP
+                    # Ajouter le fichier modifié au nouveau ZIP
                     new_zip.writestr(file_name, modified_content)
 
+        # Repositionner le curseur pour le téléchargement
         zip_modified_buffer.seek(0)
-        st.success("Modification terminée ✅")
-        # Bouton pour télécharger le ZIP modifié
+
+        st.success("Files modified successfully ✅")
         st.download_button(
-            label="Télécharger le ZIP des fichiers modifiés",
+            label="Download Modified ZIP",
             data=zip_modified_buffer,
-            file_name=uploaded_zip.name,
+            file_name="modified_files.zip",
             mime="application/zip"
         )
+
         
