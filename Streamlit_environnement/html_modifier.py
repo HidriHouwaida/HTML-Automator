@@ -5,7 +5,7 @@ import io
 st.title("HTML Automator - Custom Tag Replacement")
 
 # Import ZIP
-uploaded_zip = st.file_uploader("Upload a ZIP containing HTML files or One HTML file", type=["zip","html"])
+uploaded_zip = st.file_uploader("Upload a ZIP containing HTML files", type=["zip"])
 
 # Zone pour balises à remplacer et leurs remplacements
 st.subheader("Enter the tags to replace and their replacements")
